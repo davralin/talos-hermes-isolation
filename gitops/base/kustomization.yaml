@@ -4,5 +4,6 @@ kind: Kustomization
 resources:
   - sources.yaml
   - local-path-provisioner.yaml
+  - haproxy-ingress-namespace.yaml
   - haproxy-ingress.yaml
   - cnpg.yaml
