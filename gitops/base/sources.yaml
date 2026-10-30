@@ -1,0 +1,32 @@
+---
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: HelmRepository
+metadata:
+  name: containeroo-charts
+  namespace: flux-system
+spec:
+  interval: 1h
+  url: https://charts.containeroo.ch
+---
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: HelmRepository
+metadata:
+  name: haproxytech-charts
+  namespace: flux-system
+spec:
+  interval: 1h
+  url: https://haproxytech.github.io/helm-charts
+---
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: OCIRepository
+metadata:
+  name: cloudnative-pg
+  namespace: flux-system
+spec:
+  interval: 1h
+  layerSelector:
+    mediaType: application/vnd.cncf.helm.chart.content.v1.tar+gzip
+    operation: copy
+  ref:
+    tag: 0.29.1
+  url: oci://ghcr.io/cloudnative-pg/charts/cloudnative-pg
