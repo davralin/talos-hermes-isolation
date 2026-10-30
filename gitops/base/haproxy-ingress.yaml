@@ -17,6 +17,8 @@ spec:
   targetNamespace: haproxy-ingress
   install:
     createNamespace: true
+    remediation:
+      retries: 3
   values:
     controller:
       kind: DaemonSet
