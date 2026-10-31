@@ -52,3 +52,33 @@ helm upgrade --install flux2 oci://ghcr.io/fluxcd-community/charts/flux2 \
   --set rbac.create=true \
   --set rbac.createAggregation=true \
   --set watchAllNamespaces=true
+
+kubectl apply -f - <<'EOF'
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: GitRepository
+metadata:
+  name: talos-hermes-isolation
+  namespace: flux-system
+spec:
+  interval: 1m
+  url: https://github.com/davralin/talos-hermes-isolation.git
+  ref:
+    branch: main
+---
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: base
+  namespace: flux-system
+spec:
+  interval: 10m
+  sourceRef:
+    kind: GitRepository
+    name: talos-hermes-isolation
+  path: ./gitops/base
+  prune: true
+  wait: true
+EOF
+
+kubectl -n flux-system wait --for=condition=ready gitrepository/talos-hermes-isolation --timeout=10m
+kubectl -n flux-system wait --for=condition=ready kustomization/base --timeout=10m
