@@ -3,7 +3,9 @@ apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 resources:
   - sources.yaml
+  - local-path-provisioner-namespace.yaml
   - local-path-provisioner.yaml
   - haproxy-ingress-namespace.yaml
   - haproxy-ingress.yaml
   - cnpg.yaml
+  - apps.yaml

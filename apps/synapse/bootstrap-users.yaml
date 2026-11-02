@@ -1,0 +1,161 @@
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: synapse-bootstrap-users
+  namespace: synapse
+spec:
+  backoffLimit: 20
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: synapse-bootstrap-users
+    spec:
+      serviceAccountName: synapse-bootstrap-users
+      automountServiceAccountToken: true
+      enableServiceLinks: false
+      restartPolicy: OnFailure
+      securityContext:
+        runAsUser: 991
+        runAsGroup: 991
+        runAsNonRoot: true
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: register-and-issue-token
+          image: ghcr.io/element-hq/synapse:v1.164.1
+          command:
+            - /bin/sh
+            - -ec
+            - |
+              python3 - <<'PY'
+              import base64
+              import json
+              import os
+              import secrets
+              import ssl
+              import urllib.error
+              import urllib.request
+              from pathlib import Path
+
+              token_path = Path('/var/run/secrets/kubernetes.io/serviceaccount/token')
+              ca_path = '/var/run/secrets/kubernetes.io/serviceaccount/ca.crt'
+              namespace = 'synapse'
+              name = 'synapse-user-credentials'
+              api = f"https://{os.environ['KUBERNETES_SERVICE_HOST']}:{os.environ['KUBERNETES_SERVICE_PORT_HTTPS']}"
+              auth = {'Authorization': 'Bearer ' + token_path.read_text().strip()}
+              context = ssl.create_default_context(cafile=ca_path)
+
+              def request(url, method='GET', payload=None, content_type='application/json'):
+                  data = None if payload is None else json.dumps(payload).encode()
+                  headers = dict(auth)
+                  if data is not None:
+                      headers['Content-Type'] = content_type
+                  req = urllib.request.Request(url, data=data, headers=headers, method=method)
+                  with urllib.request.urlopen(req, context=context, timeout=15) as response:
+                      body = response.read()
+                      return json.loads(body) if body else None
+
+              secret_url = f'{api}/api/v1/namespaces/{namespace}/secrets/{name}'
+              current = request(secret_url)
+              data = current.get('data', {})
+              operator_password = base64.b64decode(data['operator_password']).decode() if data.get('operator_password') else secrets.token_urlsafe(32)
+              hermes_password = base64.b64decode(data['hermes_password']).decode() if data.get('hermes_password') else secrets.token_urlsafe(32)
+              missing = {}
+              if not data.get('operator_password'):
+                  missing['operator_password'] = base64.b64encode(operator_password.encode()).decode()
+              if not data.get('hermes_password'):
+                  missing['hermes_password'] = base64.b64encode(hermes_password.encode()).decode()
+              if missing:
+                  request(secret_url, method='PATCH', payload={'data': missing}, content_type='application/merge-patch+json')
+              Path('/tmp/bootstrap.env').write_text(f'OPERATOR_PASSWORD={operator_password}\nHERMES_PASSWORD={hermes_password}\n')
+              Path('/tmp/bootstrap.env').chmod(0o600)
+
+              target = request(f"{api}/api/v1/namespaces/hermes-agent/secrets/hermes-matrix-auth")
+              if target.get('data', {}).get('MATRIX_ACCESS_TOKEN'):
+                  print('Hermes Matrix token already exists; preserving it.')
+              PY
+              . /tmp/bootstrap.env
+              until register_new_matrix_user -c /config/homeserver.yaml http://synapse:8008 -u operator --no-admin --exists-ok -p "$OPERATOR_PASSWORD"; do sleep 5; done
+              until register_new_matrix_user -c /config/homeserver.yaml http://synapse:8008 -u hermes --no-admin --exists-ok -p "$HERMES_PASSWORD"; do sleep 5; done
+              python3 - <<'PY'
+              import base64
+              import json
+              import os
+              import ssl
+              import urllib.error
+              import urllib.request
+              from pathlib import Path
+
+              token_path = Path('/var/run/secrets/kubernetes.io/serviceaccount/token')
+              context = ssl.create_default_context(cafile='/var/run/secrets/kubernetes.io/serviceaccount/ca.crt')
+              api = f"https://{os.environ['KUBERNETES_SERVICE_HOST']}:{os.environ['KUBERNETES_SERVICE_PORT_HTTPS']}"
+              auth = {'Authorization': 'Bearer ' + token_path.read_text().strip()}
+              secret_url = f'{api}/api/v1/namespaces/hermes-agent/secrets/hermes-matrix-auth'
+              request = urllib.request.Request(secret_url, headers=auth)
+              with urllib.request.urlopen(request, context=context, timeout=15) as response:
+                  secret = json.load(response)
+              if secret.get('data', {}).get('MATRIX_ACCESS_TOKEN'):
+                  print('Hermes Matrix token already exists; nothing to rotate.')
+                  raise SystemExit(0)
+
+              password = Path('/tmp/bootstrap.env').read_text().split('HERMES_PASSWORD=', 1)[1].splitlines()[0]
+              login = urllib.request.Request(
+                  'http://synapse:8008/_matrix/client/v3/login',
+                  data=json.dumps({
+                      'type': 'm.login.password',
+                      'identifier': {'type': 'm.id.user', 'user': 'hermes'},
+                      'password': password,
+                      'device_id': 'HERMES-AGENT',
+                      'initial_device_display_name': 'Hermes Agent',
+                  }).encode(),
+                  headers={'Content-Type': 'application/json'},
+                  method='POST',
+              )
+              with urllib.request.urlopen(login, timeout=15) as response:
+                  access_token = json.load(response)['access_token']
+
+              patch = urllib.request.Request(
+                  secret_url,
+                  data=json.dumps({'data': {'MATRIX_ACCESS_TOKEN': base64.b64encode(access_token.encode()).decode()}}).encode(),
+                  headers={**auth, 'Content-Type': 'application/merge-patch+json'},
+                  method='PATCH',
+              )
+              with urllib.request.urlopen(patch, context=context, timeout=15):
+                  pass
+              print('Created reusable Hermes Matrix access-token Secret.')
+              PY
+          env:
+            - name: KUBERNETES_SERVICE_HOST
+              value: "10.96.0.1"
+            - name: KUBERNETES_SERVICE_PORT_HTTPS
+              value: "443"
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - ALL
+          resources:
+            requests:
+              cpu: 25m
+              memory: 128Mi
+              ephemeral-storage: 128Mi
+            limits:
+              memory: 256Mi
+              ephemeral-storage: 256Mi
+          volumeMounts:
+            - name: config
+              mountPath: /config
+              readOnly: true
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        - name: config
+          secret:
+            secretName: synapse
+            items:
+              - key: homeserver.yaml
+                path: homeserver.yaml
+        - name: tmp
+          emptyDir: {}

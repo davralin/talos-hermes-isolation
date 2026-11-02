@@ -1,0 +1,57 @@
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: synapse-bootstrap-users
+  namespace: synapse
+automountServiceAccountToken: true
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: synapse-bootstrap-user-passwords
+  namespace: synapse
+rules:
+  - apiGroups: [""]
+    resources: ["secrets"]
+    resourceNames: ["synapse-user-credentials"]
+    verbs: ["get", "patch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: synapse-bootstrap-user-passwords
+  namespace: synapse
+subjects:
+  - kind: ServiceAccount
+    name: synapse-bootstrap-users
+    namespace: synapse
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: synapse-bootstrap-user-passwords
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: synapse-bootstrap-hermes-token
+  namespace: hermes-agent
+rules:
+  - apiGroups: [""]
+    resources: ["secrets"]
+    resourceNames: ["hermes-matrix-auth"]
+    verbs: ["get", "patch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: synapse-bootstrap-hermes-token
+  namespace: hermes-agent
+subjects:
+  - kind: ServiceAccount
+    name: synapse-bootstrap-users
+    namespace: synapse
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: synapse-bootstrap-hermes-token

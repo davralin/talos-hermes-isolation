@@ -1,0 +1,181 @@
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: default-deny
+  namespace: synapse
+spec:
+  podSelector: {}
+  policyTypes:
+    - Ingress
+    - Egress
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-required-traffic
+  namespace: synapse
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/controller: synapse
+      app.kubernetes.io/instance: synapse-synapse
+      app.kubernetes.io/name: synapse-synapse
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: haproxy-ingress
+          podSelector:
+            matchLabels:
+              app.kubernetes.io/instance: haproxy-ingress-haproxy-ingress
+              app.kubernetes.io/name: kubernetes-ingress
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: synapse-bootstrap-admin
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: synapse-bootstrap-users
+      ports:
+        - port: 8008
+          protocol: TCP
+  egress:
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: kube-system
+          podSelector:
+            matchLabels:
+              k8s-app: kube-dns
+      ports:
+        - port: 53
+          protocol: UDP
+        - port: 53
+          protocol: TCP
+    - to:
+        - ipBlock:
+            cidr: 10.96.0.1/32
+      ports:
+        - port: 443
+          protocol: TCP
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-bootstrap-users
+  namespace: synapse
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: synapse-bootstrap-users
+  policyTypes:
+    - Egress
+  egress:
+    - to:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/controller: synapse
+              app.kubernetes.io/instance: synapse-synapse
+              app.kubernetes.io/name: synapse-synapse
+      ports:
+        - port: 8008
+          protocol: TCP
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: kube-system
+          podSelector:
+            matchLabels:
+              k8s-app: kube-dns
+      ports:
+        - port: 53
+          protocol: UDP
+        - port: 53
+          protocol: TCP
+    - to:
+        - ipBlock:
+            cidr: 10.96.0.1/32
+      ports:
+        - port: 443
+          protocol: TCP
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-bootstrap-admin
+  namespace: synapse
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: synapse-bootstrap-admin
+  policyTypes:
+    - Egress
+  egress:
+    - to:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/controller: synapse
+              app.kubernetes.io/instance: synapse-synapse
+              app.kubernetes.io/name: synapse-synapse
+      ports:
+        - port: 8008
+          protocol: TCP
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: kube-system
+          podSelector:
+            matchLabels:
+              k8s-app: kube-dns
+      ports:
+        - port: 53
+          protocol: UDP
+        - port: 53
+          protocol: TCP
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-element-web-ingress
+  namespace: synapse
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/controller: element-web
+      app.kubernetes.io/instance: synapse-element-web
+      app.kubernetes.io/name: synapse-element-web
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: haproxy-ingress
+          podSelector:
+            matchLabels:
+              app.kubernetes.io/instance: haproxy-ingress-haproxy-ingress
+              app.kubernetes.io/name: kubernetes-ingress
+      ports:
+        - port: 8080
+          protocol: TCP
+---
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: synapse-bootstrap-users-api
+  namespace: synapse
+spec:
+  endpointSelector:
+    matchLabels:
+      k8s:io.kubernetes.pod.namespace: synapse
+      k8s:app.kubernetes.io/name: synapse-bootstrap-users
+  egress:
+    - toEntities:
+        - kube-apiserver
+      toPorts:
+        - ports:
+            - port: "6443"
+              protocol: TCP

@@ -1,0 +1,121 @@
+---
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: &name element-web
+  namespace: flux-system
+spec:
+  interval: 30m
+  chartRef:
+    kind: OCIRepository
+    name: app-template
+    namespace: flux-system
+  targetNamespace: synapse
+  install:
+    remediation:
+      retries: 3
+  upgrade:
+    remediation:
+      retries: 3
+  values:
+    fullnameOverride: *name
+    global:
+      createDefaultServiceAccount: false
+    defaultPodOptions:
+      automountServiceAccountToken: false
+      enableServiceLinks: false
+      securityContext:
+        runAsUser: 101
+        runAsGroup: 101
+        fsGroup: 101
+        runAsNonRoot: true
+        seccompProfile:
+          type: RuntimeDefault
+    controllers:
+      element-web:
+        replicas: 1
+        containers:
+          element-web:
+            image:
+              repository: ghcr.io/element-hq/element-web
+              tag: v1.12.33
+            env:
+              ELEMENT_WEB_PORT: "8080"
+            probes:
+              startup:
+                enabled: true
+                custom: true
+                spec:
+                  httpGet:
+                    path: /config.json
+                    port: &port 8080
+                  failureThreshold: 30
+                  periodSeconds: 5
+              liveness:
+                enabled: true
+                custom: true
+                spec:
+                  httpGet:
+                    path: /config.json
+                    port: *port
+                  periodSeconds: 10
+              readiness:
+                enabled: true
+                custom: true
+                spec:
+                  httpGet:
+                    path: /config.json
+                    port: *port
+                  periodSeconds: 10
+            resources:
+              requests:
+                cpu: 25m
+                memory: 128Mi
+                ephemeral-storage: 128Mi
+              limits:
+                memory: 256Mi
+                ephemeral-storage: 256Mi
+            securityContext:
+              allowPrivilegeEscalation: false
+              readOnlyRootFilesystem: true
+              capabilities:
+                drop:
+                  - ALL
+    service:
+      element-web:
+        controller: *name
+        ports:
+          http:
+            port: 80
+            targetPort: *port
+    persistence:
+      config:
+        enabled: true
+        type: configMap
+        name: synapse
+        advancedMounts:
+          element-web:
+            element-web:
+              - path: /app/config.json
+                subPath: element-config.json
+                readOnly: true
+      nginx-config:
+        enabled: true
+        type: emptyDir
+        globalMounts:
+          - path: /etc/nginx/conf.d
+      nginx-cache:
+        enabled: true
+        type: emptyDir
+        globalMounts:
+          - path: /var/cache/nginx
+      nginx-run:
+        enabled: true
+        type: emptyDir
+        globalMounts:
+          - path: /var/run
+      tmp:
+        enabled: true
+        type: emptyDir
+        globalMounts:
+          - path: /tmp
