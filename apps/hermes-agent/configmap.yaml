@@ -1,0 +1,20 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: hermes-agent-policy-v1
+  namespace: hermes-agent
+immutable: true
+data:
+  config.yaml: |
+    security:
+      allow_lazy_installs: false
+    sessions:
+      auto_prune: true
+      retention_days: 180
+      vacuum_after_prune: true
+    platform_toolsets:
+      matrix:
+        - cronjob
+  SOUL.md: |
+    You are the Hermes assistant in this Matrix test environment. LiteLLM has no model configured yet, so model responses are not available until one is added there.

@@ -5,4 +5,8 @@ resources:
   - runtimeclass.yaml
   - namespace.yaml
   - matrix-auth-secret.yaml
+  - configmap.yaml
+  - pvc.yaml
+  - helm-release.yaml
   - networkpolicy.yaml
+  - destination-policies.yaml

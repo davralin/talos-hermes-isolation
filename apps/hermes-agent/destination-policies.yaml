@@ -1,0 +1,46 @@
+---
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: synapse-allow-hermes-agent
+  namespace: synapse
+spec:
+  endpointSelector:
+    matchLabels:
+      k8s:app.kubernetes.io/controller: synapse
+      k8s:app.kubernetes.io/instance: synapse-synapse
+      k8s:app.kubernetes.io/name: synapse-synapse
+  ingress:
+    - fromEndpoints:
+        - matchLabels:
+            k8s:io.kubernetes.pod.namespace: hermes-agent
+            k8s:app.kubernetes.io/controller: hermes-agent
+            k8s:app.kubernetes.io/instance: hermes-agent-hermes-agent
+            k8s:app.kubernetes.io/name: hermes-agent-hermes-agent
+      toPorts:
+        - ports:
+            - port: "8008"
+              protocol: TCP
+---
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: litellm-allow-hermes-agent
+  namespace: litellm
+spec:
+  endpointSelector:
+    matchLabels:
+      k8s:app.kubernetes.io/controller: litellm
+      k8s:app.kubernetes.io/instance: litellm-litellm
+      k8s:app.kubernetes.io/name: litellm-litellm
+  ingress:
+    - fromEndpoints:
+        - matchLabels:
+            k8s:io.kubernetes.pod.namespace: hermes-agent
+            k8s:app.kubernetes.io/controller: hermes-agent
+            k8s:app.kubernetes.io/instance: hermes-agent-hermes-agent
+            k8s:app.kubernetes.io/name: hermes-agent-hermes-agent
+      toPorts:
+        - ports:
+            - port: "4000"
+              protocol: TCP
