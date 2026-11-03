@@ -52,6 +52,7 @@ spec:
                     key: MATRIX_ACCESS_TOKEN
               MATRIX_E2EE_MODE: "off"
               MATRIX_REQUIRE_MENTION: "false"
+              MATRIX_ALLOW_ALL_USERS: "true"
             probes:
               startup:
                 enabled: true
