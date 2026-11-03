@@ -1,0 +1,140 @@
+ARG PYTHON_VERSION
+ARG PYTHON_DIGEST
+ARG UV_VERSION
+ARG UV_DIGEST
+FROM python:${PYTHON_VERSION}@${PYTHON_DIGEST} AS python
+
+FROM ghcr.io/astral-sh/uv:${UV_VERSION}@${UV_DIGEST} AS uv
+
+FROM python AS sqlite-build
+
+ARG SQLITE_AUTOCONF_VERSION
+ARG SQLITE_SHA256
+
+RUN apt-get update && \
+    apt-get install --yes --no-install-recommends build-essential ca-certificates curl && \
+    rm -rf /var/lib/apt/lists/* && \
+    curl --fail --location --silent --show-error \
+        --output /tmp/sqlite.tar.gz \
+        "https://sqlite.org/2026/sqlite-autoconf-${SQLITE_AUTOCONF_VERSION}.tar.gz" && \
+    printf '%s  %s\n' "${SQLITE_SHA256}" /tmp/sqlite.tar.gz | sha256sum --check && \
+    tar --extract --gzip --file /tmp/sqlite.tar.gz --directory /tmp && \
+    cd "/tmp/sqlite-autoconf-${SQLITE_AUTOCONF_VERSION}" && \
+    ./configure --prefix=/opt/sqlite-fixed --disable-static \
+        CFLAGS='-O2 -DSQLITE_ENABLE_FTS5 -DSQLITE_THREADSAFE=1' && \
+    make -j"$(nproc)" && \
+    make install
+
+FROM python AS source
+
+ARG SOURCE_COMMIT
+ARG SOURCE_SHA256
+
+RUN apt-get update && \
+    apt-get install --yes --no-install-recommends ca-certificates curl && \
+    rm -rf /var/lib/apt/lists/* && \
+    curl --fail --location --silent --show-error \
+        --output /tmp/hermes-agent.tar.gz \
+        "https://github.com/NousResearch/hermes-agent/archive/${SOURCE_COMMIT}.tar.gz" && \
+    printf '%s  %s\n' "${SOURCE_SHA256}" /tmp/hermes-agent.tar.gz | sha256sum --check && \
+    mkdir /opt/hermes && \
+    tar --extract --gzip --strip-components=1 --file /tmp/hermes-agent.tar.gz --directory /opt/hermes && \
+    rm /tmp/hermes-agent.tar.gz
+
+FROM python AS builder
+
+ARG SOURCE_COMMIT
+ARG UPSTREAM_VERSION
+
+COPY --from=uv /uv /uvx /bin/
+
+RUN apt-get update && \
+    apt-get install --yes --no-install-recommends build-essential libffi-dev libolm-dev && \
+    rm -rf /var/lib/apt/lists/*
+
+WORKDIR /opt/hermes
+
+COPY --from=source /opt/hermes /opt/hermes
+
+RUN sed --in-place "s/version = \"0.0.0\"/version = \"${UPSTREAM_VERSION#v}\"/" pyproject.toml && \
+    uv sync --frozen --no-dev --extra matrix --extra mcp && \
+    /opt/hermes/.venv/bin/python scripts/write_install_stamp.py \
+        --output install-stamp.json \
+        --commit "${SOURCE_COMMIT}" \
+        --base-version "${UPSTREAM_VERSION#v}" \
+        --distance 0 \
+        --source docker \
+        --distribution docker \
+        --update-mechanism external && \
+    rm -rf \
+        .github \
+        apps \
+        assets \
+        contributors \
+        evals \
+        native \
+        nix \
+        optional-mcps \
+        optional-skills \
+        scripts \
+        skills \
+        tests \
+        tests-js \
+        ui-tui \
+        website \
+        plugins/computer_use \
+        plugins/platforms/photon \
+        scripts/whatsapp-bridge \
+        tools/computer_use \
+        tools/computer_use_tool.py \
+        hermes_cli/subcommands/computer_use.py \
+        hermes_cli/subcommands/computer_use_screen.py \
+        pyproject.toml \
+        setup.py \
+        uv.lock \
+        package.json \
+        package-lock.json && \
+    sed --in-place \
+        -e '/from hermes_cli.subcommands.computer_use import build_computer_use_parser/d' \
+        -e '/^[[:space:]]*build_computer_use_parser(subparsers)$/d' \
+        hermes_cli/main.py && \
+    find . -maxdepth 1 -type f \( -name '*.md' -o -name '*.es.md' -o -name '*.ur-pk.md' -o -name '*.zh-CN.md' \) -delete
+
+FROM python
+
+RUN apt-get update && \
+    apt-get install --yes --no-install-recommends ca-certificates libffi8 libolm3 ripgrep tini && \
+    rm -rf /var/lib/apt/lists/* && \
+    groupadd --gid 10000 hermes && \
+    useradd --uid 10000 --gid 10000 --home-dir /opt/data --no-create-home --shell /usr/sbin/nologin hermes && \
+    mkdir --parents /opt/data && \
+    chown hermes:hermes /opt/data && \
+    rm -rf /usr/local/lib/python3.14/site-packages/pip /usr/local/lib/python3.14/site-packages/pip-*.dist-info && \
+    rm -f /usr/local/bin/2to3* /usr/local/bin/idle3* /usr/local/bin/pip* /usr/local/bin/pydoc3* /usr/local/bin/python*-config
+
+# https://github.com/NousResearch/hermes-agent/issues/70480
+COPY --from=sqlite-build /opt/sqlite-fixed/lib/libsqlite3.so.3.53.4 /usr/local/lib/
+COPY --from=builder /opt/hermes /opt/hermes
+COPY healthcheck.py /usr/local/bin/hermes-gateway-healthcheck
+
+RUN ln -sf libsqlite3.so.3.53.4 /usr/local/lib/libsqlite3.so.0 && \
+    ln -sf libsqlite3.so.3.53.4 /usr/local/lib/libsqlite3.so && \
+    printf '/usr/local/lib\n' > /etc/ld.so.conf.d/000-sqlite-fixed.conf && \
+    ldconfig && \
+    chmod 0555 /usr/local/bin/hermes-gateway-healthcheck
+
+ENV HOME=/opt/data \
+    HERMES_HOME=/opt/data \
+    HERMES_WRITE_SAFE_ROOT=/opt/data \
+    HERMES_DISABLE_LAZY_INSTALLS=1 \
+    PATH=/opt/hermes/.venv/bin:/usr/local/bin:/usr/bin:/bin \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1
+
+WORKDIR /opt/data
+USER 10000:10000
+
+HEALTHCHECK --interval=30s --timeout=5s --start-period=150s --retries=3 CMD ["/usr/local/bin/hermes-gateway-healthcheck"]
+
+ENTRYPOINT ["/usr/bin/tini", "--", "/opt/hermes/.venv/bin/hermes"]
+CMD ["gateway", "run"]
