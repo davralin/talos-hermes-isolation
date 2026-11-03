@@ -77,7 +77,7 @@ spec:
     name: talos-hermes-isolation
   path: ./gitops/base
   prune: true
-  wait: true
+  wait: false
 EOF
 
 kubectl -n flux-system wait --for=condition=ready gitrepository/talos-hermes-isolation --timeout=10m
