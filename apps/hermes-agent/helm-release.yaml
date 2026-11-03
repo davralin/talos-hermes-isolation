@@ -1,0 +1,156 @@
+---
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: &name hermes-agent
+  namespace: flux-system
+spec:
+  interval: 30m
+  chartRef:
+    kind: OCIRepository
+    name: app-template
+    namespace: flux-system
+  targetNamespace: hermes-agent
+  install:
+    remediation:
+      retries: 3
+  upgrade:
+    remediation:
+      retries: 3
+  values:
+    fullnameOverride: *name
+    global:
+      createDefaultServiceAccount: false
+    defaultPodOptions:
+      runtimeClassName: kata
+      automountServiceAccountToken: false
+      enableServiceLinks: false
+      securityContext:
+        runAsUser: 10000
+        runAsGroup: 10000
+        fsGroup: 10000
+        fsGroupChangePolicy: OnRootMismatch
+        runAsNonRoot: true
+        seccompProfile:
+          type: RuntimeDefault
+    controllers:
+      hermes-agent:
+        replicas: 1
+        containers:
+          hermes-agent:
+            image:
+              repository: ghcr.io/davralin/talos-hermes-isolation/hermes-agent
+              tag: v0.22.5@sha256:b8fbb63f49c2161c22434924ec06e00e970c1a9e0b099f72880952834313ad5b
+            env:
+              HERMES_MANAGED_DIR: /managed
+              MATRIX_HOMESERVER: http://synapse.synapse.svc.cluster.local:8008
+              MATRIX_USER_ID: "@hermes:synapse.poc.test"
+              MATRIX_ACCESS_TOKEN:
+                valueFrom:
+                  secretKeyRef:
+                    name: hermes-matrix-auth
+                    key: MATRIX_ACCESS_TOKEN
+              MATRIX_E2EE_MODE: "off"
+              MATRIX_REQUIRE_MENTION: "false"
+            probes:
+              startup:
+                enabled: true
+                custom: true
+                spec:
+                  exec:
+                    command:
+                      - /usr/local/bin/hermes-gateway-healthcheck
+                  periodSeconds: 5
+                  timeoutSeconds: 5
+                  failureThreshold: 36
+              liveness:
+                enabled: true
+                custom: true
+                spec:
+                  exec:
+                    command:
+                      - /usr/local/bin/hermes-gateway-healthcheck
+                  periodSeconds: 30
+                  timeoutSeconds: 5
+                  failureThreshold: 3
+              readiness:
+                enabled: true
+                custom: true
+                spec:
+                  exec:
+                    command:
+                      - /usr/local/bin/hermes-gateway-healthcheck
+                  periodSeconds: 10
+                  timeoutSeconds: 5
+            resources:
+              requests:
+                cpu: 250m
+                memory: 512Mi
+                ephemeral-storage: 1Gi
+              limits:
+                cpu: "1"
+                memory: 1Gi
+                ephemeral-storage: 2Gi
+            securityContext:
+              allowPrivilegeEscalation: false
+              readOnlyRootFilesystem: true
+              capabilities:
+                drop:
+                  - ALL
+    persistence:
+      data:
+        enabled: true
+        existingClaim: hermes-agent
+        globalMounts:
+          - path: /opt/data
+      tmp:
+        enabled: true
+        type: emptyDir
+        sizeLimit: 128Mi
+        globalMounts:
+          - path: /tmp
+      managed:
+        enabled: true
+        type: configMap
+        name: hermes-agent-policy-v1
+        globalMounts:
+          - path: /managed
+            readOnly: true
+    networkpolicies:
+      required-egress:
+        type: cilium
+        controller: *name
+        ingress: []
+        egress:
+          - toEndpoints:
+              - matchLabels:
+                  k8s:io.kubernetes.pod.namespace: kube-system
+                  k8s:k8s-app: kube-dns
+            toPorts:
+              - ports:
+                  - port: "53"
+                    protocol: ANY
+                rules:
+                  dns:
+                    - matchName: synapse.synapse.svc.cluster.local
+                    - matchName: litellm.litellm.svc.cluster.local
+          - toEndpoints:
+              - matchLabels:
+                  k8s:io.kubernetes.pod.namespace: synapse
+                  k8s:app.kubernetes.io/controller: synapse
+                  k8s:app.kubernetes.io/instance: synapse-synapse
+                  k8s:app.kubernetes.io/name: synapse-synapse
+            toPorts:
+              - ports:
+                  - port: "8008"
+                    protocol: TCP
+          - toEndpoints:
+              - matchLabels:
+                  k8s:io.kubernetes.pod.namespace: litellm
+                  k8s:app.kubernetes.io/controller: litellm
+                  k8s:app.kubernetes.io/instance: litellm-litellm
+                  k8s:app.kubernetes.io/name: litellm-litellm
+            toPorts:
+              - ports:
+                  - port: "4000"
+                    protocol: TCP
