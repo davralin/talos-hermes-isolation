@@ -51,8 +51,9 @@ spec:
                     name: hermes-matrix-auth
                     key: MATRIX_ACCESS_TOKEN
               MATRIX_E2EE_MODE: "off"
-              MATRIX_REQUIRE_MENTION: "false"
-              MATRIX_ALLOW_ALL_USERS: "true"
+              MATRIX_ALLOWED_ROOMS: "!RmioTcubVcbthCAzoBhjeVnbzWnpUKsL6161HvrDM1A"
+              MATRIX_HOME_ROOM: "!RmioTcubVcbthCAzoBhjeVnbzWnpUKsL6161HvrDM1A"
+              MATRIX_REQUIRE_MENTION: "true"
             probes:
               startup:
                 enabled: true
@@ -113,7 +114,7 @@ spec:
       managed:
         enabled: true
         type: configMap
-        name: hermes-agent-policy-v1
+        name: hermes-agent-policy-v2
         globalMounts:
           - path: /managed
             readOnly: true
