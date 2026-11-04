@@ -2,7 +2,7 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: hermes-agent-policy-v1
+  name: hermes-agent-policy-v2
   namespace: hermes-agent
 immutable: true
 data:
@@ -16,5 +16,10 @@ data:
     platform_toolsets:
       matrix:
         - cronjob
+    platforms:
+      matrix:
+        group_allowed_chats:
+          - "!RmioTcubVcbthCAzoBhjeVnbzWnpUKsL6161HvrDM1A"
+        unauthorized_dm_behavior: ignore
   SOUL.md: |
     You are the Hermes assistant in this Matrix test environment. LiteLLM has no model configured yet, so model responses are not available until one is added there.
