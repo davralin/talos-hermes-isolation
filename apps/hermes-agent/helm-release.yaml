@@ -43,6 +43,11 @@ spec:
               tag: v0.22.5@sha256:b8fbb63f49c2161c22434924ec06e00e970c1a9e0b099f72880952834313ad5b
             env:
               HERMES_MANAGED_DIR: /managed
+              HERMES_LITELLM_API_KEY:
+                valueFrom:
+                  secretKeyRef:
+                    name: hermes-litellm-virtual-key
+                    key: api-key
               MATRIX_HOMESERVER: http://synapse.synapse.svc.cluster.local:8008
               MATRIX_USER_ID: "@hermes:synapse.poc.test"
               MATRIX_ACCESS_TOKEN:
@@ -51,8 +56,8 @@ spec:
                     name: hermes-matrix-auth
                     key: MATRIX_ACCESS_TOKEN
               MATRIX_E2EE_MODE: "off"
-              MATRIX_ALLOWED_ROOMS: "!RmioTcubVcbthCAzoBhjeVnbzWnpUKsL6161HvrDM1A"
-              MATRIX_HOME_ROOM: "!RmioTcubVcbthCAzoBhjeVnbzWnpUKsL6161HvrDM1A"
+              MATRIX_ALLOWED_ROOMS: "!cl1iLtSaWE74utNrhBGNhzpEOI8ISp7_Yr61rRE9QSQ"
+              MATRIX_HOME_ROOM: "!cl1iLtSaWE74utNrhBGNhzpEOI8ISp7_Yr61rRE9QSQ"
               MATRIX_REQUIRE_MENTION: "true"
             probes:
               startup:
@@ -114,7 +119,7 @@ spec:
       managed:
         enabled: true
         type: configMap
-        name: hermes-agent-policy-v2
+        name: hermes-agent-policy-v4
         globalMounts:
           - path: /managed
             readOnly: true
