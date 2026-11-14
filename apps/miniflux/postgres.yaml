@@ -1,0 +1,21 @@
+---
+apiVersion: postgresql.cnpg.io/v1
+kind: Cluster
+metadata:
+  name: miniflux-postgres
+  namespace: miniflux
+spec:
+  instances: 1
+  bootstrap:
+    initdb:
+      database: miniflux
+      owner: miniflux
+  storage:
+    size: 2Gi
+    storageClass: local-path
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      memory: 512Mi

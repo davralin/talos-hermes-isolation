@@ -1,0 +1,169 @@
+---
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: miniflux
+  namespace: flux-system
+spec:
+  interval: 30m
+  chartRef:
+    kind: OCIRepository
+    name: app-template
+    namespace: flux-system
+  targetNamespace: miniflux
+  install:
+    createNamespace: false
+    remediation:
+      retries: 3
+  upgrade:
+    remediation:
+      retries: 3
+  values:
+    fullnameOverride: miniflux
+    global:
+      createDefaultServiceAccount: false
+    defaultPodOptions:
+      automountServiceAccountToken: false
+      enableServiceLinks: false
+      securityContext:
+        runAsUser: 65534
+        runAsGroup: 65534
+        fsGroup: 65534
+        runAsNonRoot: true
+        seccompProfile:
+          type: RuntimeDefault
+    controllers:
+      miniflux:
+        replicas: 1
+        containers:
+          miniflux:
+            image:
+              repository: docker.io/miniflux/miniflux
+              tag: 2.3.5@sha256:8fd6c3c434ecc3d4083306f83e03c0bb74c632e0f8378da5ead7e1773b0b89c9
+            env:
+              CREATE_ADMIN: "1"
+              ADMIN_USERNAME:
+                valueFrom:
+                  secretKeyRef:
+                    name: miniflux-bootstrap-admin
+                    key: username
+              ADMIN_PASSWORD:
+                valueFrom:
+                  secretKeyRef:
+                    name: miniflux-bootstrap-admin
+                    key: password
+              DATABASE_URL:
+                valueFrom:
+                  secretKeyRef:
+                    name: miniflux-postgres-app
+                    key: uri
+              RUN_MIGRATIONS: "1"
+              POLLING_FREQUENCY: "30"
+              FETCHER_ALLOW_PRIVATE_NETWORKS: "0"
+              PORT: "8080"
+              BATCH_SIZE: "50"
+              WORKER_POOL_SIZE: "5"
+            probes:
+              startup:
+                enabled: true
+                custom: true
+                spec:
+                  httpGet:
+                    path: /healthcheck
+                    port: &port 8080
+                  failureThreshold: 36
+                  periodSeconds: 5
+                  timeoutSeconds: 3
+              liveness:
+                enabled: true
+                custom: true
+                spec:
+                  httpGet:
+                    path: /healthcheck
+                    port: *port
+                  periodSeconds: 30
+                  timeoutSeconds: 3
+              readiness:
+                enabled: true
+                custom: true
+                spec:
+                  httpGet:
+                    path: /healthcheck
+                    port: *port
+                  periodSeconds: 10
+                  timeoutSeconds: 3
+            resources:
+              requests:
+                cpu: 100m
+                memory: 256Mi
+              limits:
+                cpu: 500m
+                memory: 512Mi
+            securityContext:
+              allowPrivilegeEscalation: false
+              readOnlyRootFilesystem: true
+              capabilities:
+                drop:
+                  - ALL
+    service:
+      miniflux:
+        controller: miniflux
+        ports:
+          http:
+            port: *port
+    networkpolicies:
+      miniflux:
+        type: cilium
+        controller: miniflux
+        ingress:
+          - fromEntities:
+              - host
+            toPorts:
+              - ports:
+                  - port: "8080"
+                    protocol: TCP
+          - fromEndpoints:
+              - matchLabels:
+                  k8s:io.kubernetes.pod.namespace: miniflux
+                  k8s:app.kubernetes.io/controller: news-mcp
+                  k8s:app.kubernetes.io/instance: miniflux-news-mcp
+                  k8s:app.kubernetes.io/name: miniflux-news-mcp
+            toPorts:
+              - ports:
+                  - port: "8080"
+                    protocol: TCP
+          - fromEndpoints:
+              - matchLabels:
+                  k8s:io.kubernetes.pod.namespace: miniflux
+                  k8s:app.kubernetes.io/name: miniflux-feed-import
+            toPorts:
+              - ports:
+                  - port: "8080"
+                    protocol: TCP
+        egress:
+          - toEndpoints:
+              - matchLabels:
+                  k8s:io.kubernetes.pod.namespace: kube-system
+                  k8s:k8s-app: kube-dns
+            toPorts:
+              - ports:
+                  - port: "53"
+                    protocol: ANY
+                rules:
+                  dns:
+                    - matchPattern: "*"
+          - toEndpoints:
+              - matchLabels:
+                  k8s:cnpg.io/cluster: miniflux-postgres
+            toPorts:
+              - ports:
+                  - port: "5432"
+                    protocol: TCP
+          - toEntities:
+              - world
+            toPorts:
+              - ports:
+                  - port: "80"
+                    protocol: TCP
+                  - port: "443"
+                    protocol: TCP

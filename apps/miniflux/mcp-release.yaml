@@ -1,0 +1,166 @@
+---
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: news-mcp
+  namespace: flux-system
+spec:
+  interval: 30m
+  chartRef:
+    kind: OCIRepository
+    name: app-template
+    namespace: flux-system
+  targetNamespace: miniflux
+  install:
+    createNamespace: false
+    remediation:
+      retries: 3
+  upgrade:
+    remediation:
+      retries: 3
+  values:
+    fullnameOverride: news-mcp
+    global:
+      createDefaultServiceAccount: false
+    defaultPodOptions:
+      automountServiceAccountToken: false
+      enableServiceLinks: false
+      securityContext:
+        runAsUser: 10001
+        runAsGroup: 10001
+        runAsNonRoot: true
+        fsGroup: 10001
+        fsGroupChangePolicy: OnRootMismatch
+        seccompProfile:
+          type: RuntimeDefault
+    controllers:
+      news-mcp:
+        replicas: 1
+        containers:
+          news-mcp:
+            image:
+              repository: docker.io/library/python
+              tag: 3.13-alpine3.23@sha256:bf88c40985006a79ca25458159a4da1dffc457f9ae234e948b2d6df56ca5ebd2
+            command:
+              - python3
+              - /app/server.py
+            env:
+              PORT: "8081"
+              PYTHONDONTWRITEBYTECODE: "1"
+              HOME: /tmp
+              MINIFLUX_URL: http://miniflux.miniflux.svc.cluster.local.:8080
+              MINIFLUX_API_TOKEN:
+                valueFrom:
+                  secretKeyRef:
+                    name: miniflux-mcp-auth
+                    key: miniflux-api-token
+              MCP_BEARER_TOKEN:
+                valueFrom:
+                  secretKeyRef:
+                    name: miniflux-mcp-auth
+                    key: mcp-bearer-token
+            probes:
+              startup:
+                enabled: true
+                custom: true
+                spec:
+                  httpGet:
+                    path: /healthz
+                    port: &port 8081
+                  failureThreshold: 30
+                  periodSeconds: 5
+                  timeoutSeconds: 3
+              liveness:
+                enabled: true
+                custom: true
+                spec:
+                  httpGet:
+                    path: /healthz
+                    port: *port
+                  periodSeconds: 30
+                  timeoutSeconds: 3
+              readiness:
+                enabled: true
+                custom: true
+                spec:
+                  httpGet:
+                    path: /healthz
+                    port: *port
+                  periodSeconds: 10
+                  timeoutSeconds: 3
+            resources:
+              requests:
+                cpu: 50m
+                memory: 64Mi
+              limits:
+                cpu: 250m
+                memory: 128Mi
+            securityContext:
+              allowPrivilegeEscalation: false
+              readOnlyRootFilesystem: true
+              capabilities:
+                drop:
+                  - ALL
+    service:
+      news-mcp:
+        controller: news-mcp
+        ports:
+          http:
+            port: *port
+    networkpolicies:
+      news-mcp:
+        type: cilium
+        controller: news-mcp
+        ingress:
+          - fromEntities:
+              - host
+            toPorts:
+              - ports:
+                  - port: "8081"
+                    protocol: TCP
+          - fromEndpoints:
+              - matchLabels:
+                  k8s:io.kubernetes.pod.namespace: hermes-agent
+                  k8s:app.kubernetes.io/controller: hermes-agent
+                  k8s:app.kubernetes.io/instance: hermes-agent-hermes-agent
+                  k8s:app.kubernetes.io/name: hermes-agent-hermes-agent
+            toPorts:
+              - ports:
+                  - port: "8081"
+                    protocol: TCP
+        egress:
+          - toEndpoints:
+              - matchLabels:
+                  k8s:io.kubernetes.pod.namespace: kube-system
+                  k8s:k8s-app: kube-dns
+            toPorts:
+              - ports:
+                  - port: "53"
+                    protocol: ANY
+                rules:
+                  dns:
+                    - matchName: miniflux.miniflux.svc.cluster.local
+          - toEndpoints:
+              - matchLabels:
+                  k8s:io.kubernetes.pod.namespace: miniflux
+                  k8s:app.kubernetes.io/controller: miniflux
+                  k8s:app.kubernetes.io/instance: miniflux-miniflux
+                  k8s:app.kubernetes.io/name: miniflux-miniflux
+            toPorts:
+              - ports:
+                  - port: "8080"
+                    protocol: TCP
+    persistence:
+      server:
+        enabled: true
+        type: configMap
+        name: news-mcp-server
+        globalMounts:
+          - path: /app/server.py
+            subPath: server.py
+            readOnly: true
+      tmp:
+        enabled: true
+        type: emptyDir
+        globalMounts:
+          - path: /tmp

@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<opml version="2.0">
+  <head><title>Hermes News Sources</title></head>
+  <body>
+    <outline text="World" title="World">
+      <outline text="BBC World" title="BBC World" type="rss" xmlUrl="https://feeds.bbci.co.uk/news/world/rss.xml" />
+      <outline text="The Guardian World" title="The Guardian World" type="rss" xmlUrl="https://www.theguardian.com/world/rss" />
+      <outline text="NPR World" title="NPR World" type="rss" xmlUrl="https://feeds.npr.org/1004/rss.xml" />
+      <outline text="DW World" title="DW World" type="rss" xmlUrl="https://rss.dw.com/xml/rss-en-world" />
+      <outline text="Al Jazeera" title="Al Jazeera" type="rss" xmlUrl="https://www.aljazeera.com/xml/rss/all.xml" />
+    </outline>
+    <outline text="Europe" title="Europe">
+      <outline text="France 24" title="France 24" type="rss" xmlUrl="https://www.france24.com/en/rss" />
+      <outline text="Euronews" title="Euronews" type="rss" xmlUrl="https://www.euronews.com/rss?level=theme&amp;name=news" />
+      <outline text="POLITICO Europe" title="POLITICO Europe" type="rss" xmlUrl="https://www.politico.eu/feed/" />
+      <outline text="European Commission" title="European Commission" type="rss" xmlUrl="https://ec.europa.eu/commission/presscorner/api/rss?language=en" />
+      <outline text="Yle News" title="Yle News" type="rss" xmlUrl="https://yle.fi/rss/news" />
+    </outline>
+    <outline text="Technology" title="Technology">
+      <outline text="Ars Technica" title="Ars Technica" type="rss" xmlUrl="https://feeds.arstechnica.com/arstechnica/index" />
+      <outline text="The Verge" title="The Verge" type="rss" xmlUrl="https://www.theverge.com/rss/index.xml" />
+      <outline text="TechCrunch" title="TechCrunch" type="rss" xmlUrl="https://techcrunch.com/feed/" />
+      <outline text="Wired" title="Wired" type="rss" xmlUrl="https://www.wired.com/feed/rss" />
+      <outline text="Hacker News" title="Hacker News" type="rss" xmlUrl="https://news.ycombinator.com/rss" />
+    </outline>
+    <outline text="Science and Space" title="Science and Space">
+      <outline text="ScienceDaily" title="ScienceDaily" type="rss" xmlUrl="https://www.sciencedaily.com/rss/all.xml" />
+      <outline text="Phys.org" title="Phys.org" type="rss" xmlUrl="https://phys.org/rss-feed/" />
+      <outline text="Quanta Magazine" title="Quanta Magazine" type="rss" xmlUrl="https://www.quantamagazine.org/feed/" />
+      <outline text="NASA" title="NASA" type="rss" xmlUrl="https://www.nasa.gov/feed/" />
+      <outline text="Space.com" title="Space.com" type="rss" xmlUrl="https://www.space.com/feeds.xml" />
+    </outline>
+    <outline text="Business and Economy" title="Business and Economy">
+      <outline text="CNBC Top News" title="CNBC Top News" type="rss" xmlUrl="https://www.cnbc.com/id/100003114/device/rss/rss.html" />
+      <outline text="Financial Times World" title="Financial Times World" type="rss" xmlUrl="https://www.ft.com/world?format=rss" />
+      <outline text="MarketWatch" title="MarketWatch" type="rss" xmlUrl="https://feeds.content.dowjones.io/public/rss/mw_topstories" />
+      <outline text="BBC Business" title="BBC Business" type="rss" xmlUrl="https://feeds.bbci.co.uk/news/business/rss.xml" />
+      <outline text="European Central Bank" title="European Central Bank" type="rss" xmlUrl="https://www.ecb.europa.eu/rss/press.html" />
+    </outline>
+    <outline text="Climate and Energy" title="Climate and Energy">
+      <outline text="Carbon Brief" title="Carbon Brief" type="rss" xmlUrl="https://www.carbonbrief.org/feed" />
+      <outline text="Grist" title="Grist" type="rss" xmlUrl="https://grist.org/feed/" />
+      <outline text="Inside Climate News" title="Inside Climate News" type="rss" xmlUrl="https://insideclimatenews.org/feed/" />
+      <outline text="NOAA News" title="NOAA News" type="rss" xmlUrl="https://www.noaa.gov/rss.xml" />
+      <outline text="US Department of Energy" title="US Department of Energy" type="rss" xmlUrl="https://www.energy.gov/rss.xml" />
+    </outline>
+    <outline text="Health" title="Health">
+      <outline text="WHO News" title="WHO News" type="rss" xmlUrl="https://www.who.int/rss-feeds/news-english.xml" />
+      <outline text="STAT News" title="STAT News" type="rss" xmlUrl="https://www.statnews.com/feed/" />
+      <outline text="Medical Xpress" title="Medical Xpress" type="rss" xmlUrl="https://medicalxpress.com/rss-feed/" />
+      <outline text="NPR Health" title="NPR Health" type="rss" xmlUrl="https://feeds.npr.org/1128/rss.xml" />
+      <outline text="BBC Health" title="BBC Health" type="rss" xmlUrl="https://feeds.bbci.co.uk/news/health/rss.xml" />
+    </outline>
+    <outline text="Cybersecurity" title="Cybersecurity">
+      <outline text="Krebs on Security" title="Krebs on Security" type="rss" xmlUrl="https://krebsonsecurity.com/feed/" />
+      <outline text="BleepingComputer" title="BleepingComputer" type="rss" xmlUrl="https://www.bleepingcomputer.com/feed/" />
+      <outline text="CISA Advisories" title="CISA Advisories" type="rss" xmlUrl="https://www.cisa.gov/cybersecurity-advisories/all.xml" />
+      <outline text="Schneier on Security" title="Schneier on Security" type="rss" xmlUrl="https://www.schneier.com/feed/atom/" />
+      <outline text="SecurityWeek" title="SecurityWeek" type="rss" xmlUrl="https://www.securityweek.com/feed/" />
+    </outline>
+    <outline text="Culture and Books" title="Culture and Books">
+      <outline text="Smithsonian Magazine" title="Smithsonian Magazine" type="rss" xmlUrl="https://www.smithsonianmag.com/rss/latest_articles/" />
+      <outline text="NPR Books" title="NPR Books" type="rss" xmlUrl="https://feeds.npr.org/1032/rss.xml" />
+      <outline text="Literary Hub" title="Literary Hub" type="rss" xmlUrl="https://lithub.com/feed/" />
+      <outline text="The Guardian Culture" title="The Guardian Culture" type="rss" xmlUrl="https://www.theguardian.com/uk/culture/rss" />
+      <outline text="The Conversation" title="The Conversation" type="rss" xmlUrl="https://theconversation.com/global/home-page.atom" />
+    </outline>
+    <outline text="Sports" title="Sports">
+      <outline text="ESPN News" title="ESPN News" type="rss" xmlUrl="https://www.espn.com/espn/rss/news" />
+      <outline text="BBC Sport" title="BBC Sport" type="rss" xmlUrl="https://feeds.bbci.co.uk/sport/rss.xml" />
+      <outline text="BBC Football" title="BBC Football" type="rss" xmlUrl="https://feeds.bbci.co.uk/sport/football/rss.xml" />
+      <outline text="MLB News" title="MLB News" type="rss" xmlUrl="https://www.mlb.com/feeds/news/rss.xml" />
+      <outline text="Sky Sports Football" title="Sky Sports Football" type="rss" xmlUrl="https://www.skysports.com/rss/12040" />
+    </outline>
+  </body>
+</opml>
