@@ -5,6 +5,7 @@ resources:
   - runtimeclass.yaml
   - namespace.yaml
   - matrix-auth-secret.yaml
+  - news-mcp-auth-secret.yaml
   - configmap.yaml
   - pvc.yaml
   - helm-release.yaml

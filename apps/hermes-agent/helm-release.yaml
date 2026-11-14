@@ -48,6 +48,11 @@ spec:
                   secretKeyRef:
                     name: hermes-litellm-virtual-key
                     key: api-key
+              MCP_NEWS_API_KEY:
+                valueFrom:
+                  secretKeyRef:
+                    name: hermes-news-mcp-auth
+                    key: MCP_NEWS_API_KEY
               MATRIX_HOMESERVER: http://synapse.synapse.svc.cluster.local:8008
               MATRIX_USER_ID: "@hermes:synapse.poc.test"
               MATRIX_ACCESS_TOKEN:
@@ -119,7 +124,7 @@ spec:
       managed:
         enabled: true
         type: configMap
-        name: hermes-agent-policy-v4
+        name: hermes-agent-policy
         globalMounts:
           - path: /managed
             readOnly: true
@@ -141,6 +146,7 @@ spec:
                   dns:
                     - matchName: synapse.synapse.svc.cluster.local
                     - matchName: litellm.litellm.svc.cluster.local
+                    - matchName: news-mcp.miniflux.svc.cluster.local
           - toEndpoints:
               - matchLabels:
                   k8s:io.kubernetes.pod.namespace: synapse
@@ -160,4 +166,14 @@ spec:
             toPorts:
               - ports:
                   - port: "4000"
+                    protocol: TCP
+          - toEndpoints:
+              - matchLabels:
+                  k8s:io.kubernetes.pod.namespace: miniflux
+                  k8s:app.kubernetes.io/controller: news-mcp
+                  k8s:app.kubernetes.io/instance: miniflux-news-mcp
+                  k8s:app.kubernetes.io/name: miniflux-news-mcp
+            toPorts:
+              - ports:
+                  - port: "8081"
                     protocol: TCP

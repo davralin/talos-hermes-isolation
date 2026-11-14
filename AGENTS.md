@@ -38,7 +38,8 @@ account joined and invited Hermes. Treat inviter authorization as separate
 from room-ID existence. Do not broaden access or change authorization policy
 just to work around this observed behavior.
 
-The Hermes policy ConfigMap is immutable. When changing room policy, bump the
-ConfigMap name in `apps/hermes-agent/configmap.yaml` and update its mount
-reference in `apps/hermes-agent/helm-release.yaml`, along with
-`MATRIX_ALLOWED_ROOMS` and `MATRIX_HOME_ROOM`.
+Hermes managed settings live in the mutable `hermes-agent-policy` ConfigMap,
+mounted read-only at `/managed`. Update that ConfigMap in place and keep its
+name aligned with the mount in `apps/hermes-agent/helm-release.yaml`. Room
+access is controlled by both the managed `group_allowed_chats` list and the
+`MATRIX_ALLOWED_ROOMS`/`MATRIX_HOME_ROOM` environment variables.

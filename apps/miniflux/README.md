@@ -30,8 +30,11 @@ After Miniflux is healthy:
 2. Authenticate as `news-reader` and create an API key.
 3. Provision `miniflux/miniflux-mcp-auth` with keys `miniflux-api-token` and
    `mcp-bearer-token`. The feed-import Job and MCP Deployment use these keys.
-4. Reconcile the feed-import Job and `news-mcp` HelmRelease. The importer skips
-   existing category names and feed URLs, so retries are safe.
+4. Copy only `mcp-bearer-token` into `hermes-agent/hermes-news-mcp-auth` under
+   key `MCP_NEWS_API_KEY`. Do not expose the Miniflux API token to Hermes.
+5. Reconcile the feed-import Job, `news-mcp`, and `hermes-agent` HelmReleases.
+   The importer skips existing category names and feed URLs, so retries are
+   safe.
 
 Each referenced runtime Secret must exist before its consuming pod or Job can
 become Ready. If a cluster is recreated, bootstrap new credentials rather than
@@ -44,3 +47,7 @@ reusing old ones.
 - The importer can reach only Miniflux API and DNS.
 - The MCP can reach only Miniflux API and DNS; inbound requests are limited to
   Hermes-agent and node-local probes/port-forwarding.
+- Hermes-agent can reach only the MCP service on TCP 8081, with DNS restricted
+  to that service name. The managed Hermes config registers this server for
+  Matrix only and allowlists its four read-only tools; it does not change the
+  prompt or SOUL text.
