@@ -129,6 +129,9 @@ spec:
         globalMounts:
           - path: /managed
             readOnly: true
+          - path: /opt/data/config.yaml
+            subPath: config.yaml
+            readOnly: true
     networkpolicies:
       required-egress:
         type: cilium
