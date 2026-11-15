@@ -21,6 +21,8 @@ data:
       matrix:
         - cronjob
         - news
+      cron:
+        - news
     mcp_servers:
       news:
         enabled: true
