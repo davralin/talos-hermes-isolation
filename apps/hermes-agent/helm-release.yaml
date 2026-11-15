@@ -43,6 +43,7 @@ spec:
               tag: v0.22.5@sha256:b8fbb63f49c2161c22434924ec06e00e970c1a9e0b099f72880952834313ad5b
             env:
               HERMES_MANAGED_DIR: /managed
+              HERMES_MODEL: chat
               HERMES_LITELLM_API_KEY:
                 valueFrom:
                   secretKeyRef:

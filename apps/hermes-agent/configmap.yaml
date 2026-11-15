@@ -10,7 +10,7 @@ data:
       allow_lazy_installs: false
     model:
       provider: custom
-      default: azure-foundry-gpt-5.6-terra
+      default: chat
       base_url: http://litellm.litellm.svc.cluster.local:4000/v1
       key_env: HERMES_LITELLM_API_KEY
     sessions:
