@@ -65,6 +65,8 @@ spec:
               MATRIX_ALLOWED_ROOMS: "!cl1iLtSaWE74utNrhBGNhzpEOI8ISp7_Yr61rRE9QSQ"
               MATRIX_HOME_ROOM: "!cl1iLtSaWE74utNrhBGNhzpEOI8ISp7_Yr61rRE9QSQ"
               MATRIX_REQUIRE_MENTION: "true"
+              MATRIX_AUTO_THREAD: "false"
+              MATRIX_SESSION_SCOPE: room
             probes:
               startup:
                 enabled: true
