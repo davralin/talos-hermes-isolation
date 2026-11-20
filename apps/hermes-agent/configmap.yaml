@@ -38,7 +38,7 @@ data:
     platforms:
       matrix:
         group_allowed_chats:
-          - "!cl1iLtSaWE74utNrhBGNhzpEOI8ISp7_Yr61rRE9QSQ"
+          - "!fH8lSSRuKR2GlyDfJBeA20iegs5bUm7qpZ_jaowOVNw"
         unauthorized_dm_behavior: ignore
   SOUL.md: |
     You are the Hermes assistant in this Matrix test environment. Use the configured LiteLLM model for replies.
