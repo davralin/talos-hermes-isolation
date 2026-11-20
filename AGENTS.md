@@ -1,5 +1,13 @@
 # Isolation test-cluster notes
 
+## Test-cluster credentials
+
+This is a private, disposable test-cluster GitOps repository. The owner may
+explicitly authorize test credentials to be stored in Git for this environment.
+When that authorization is given, follow the requested Git workflow; do not
+independently introduce SOPS or redirect the task to a different secret store.
+Keep credentials scoped to this test cluster.
+
 ## Local hostname access
 
 The isolated QEMU node is currently reachable at `10.5.0.2`. HAProxy ingress
