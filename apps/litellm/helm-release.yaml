@@ -150,9 +150,6 @@ spec:
               - ports:
                   - port: "53"
                     protocol: ANY
-                rules:
-                  dns:
-                    - matchName: litellm-postgres-rw.litellm.svc.cluster.local
           - toEndpoints:
               - matchLabels:
                   k8s:cnpg.io/cluster: litellm-postgres

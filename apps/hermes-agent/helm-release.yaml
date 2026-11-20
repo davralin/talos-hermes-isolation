@@ -52,7 +52,7 @@ spec:
               MCP_NEWS_API_KEY:
                 valueFrom:
                   secretKeyRef:
-                    name: hermes-news-mcp-auth
+                    name: hermes-news-mcp-auth-runtime
                     key: MCP_NEWS_API_KEY
               MATRIX_HOMESERVER: http://synapse.synapse.svc.cluster.local:8008
               MATRIX_USER_ID: "@hermes:synapse.poc.test"
@@ -64,6 +64,7 @@ spec:
               MATRIX_E2EE_MODE: "off"
               MATRIX_ALLOWED_ROOMS: "!fH8lSSRuKR2GlyDfJBeA20iegs5bUm7qpZ_jaowOVNw"
               MATRIX_HOME_ROOM: "!fH8lSSRuKR2GlyDfJBeA20iegs5bUm7qpZ_jaowOVNw"
+              MATRIX_ALLOWED_USERS: "@operator:synapse.poc.test"
               MATRIX_REQUIRE_MENTION: "true"
               MATRIX_AUTO_THREAD: "false"
               MATRIX_SESSION_SCOPE: room
